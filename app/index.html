@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>PaveDirt</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161718">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PaveDirt">
+
+<style>
+  html, body { margin:0; padding:0; background:#161718; }
+  #root { min-height: 100vh; }
+  #boot-fallback {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: #161718; color: #8A8783; font-family: sans-serif; font-size: 13px; text-align: center; padding: 24px;
+  }
+</style>
+
+<!-- Adaptador de almacenamiento: window.storage solo existe dentro de la vista previa
+     de Claude.ai. Fuera de ahí (esta app instalada), lo reemplazamos por localStorage
+     con la misma forma (get/set/delete/list), sin tocar el código de la app. -->
+<script>
+  if (!window.storage) {
+    const NS = 'pavedirt:';
+    window.storage = {
+      async get(key) {
+        const raw = localStorage.getItem(NS + key);
+        if (raw === null) throw new Error('Key not found: ' + key);
+        return { key, value: raw, shared: false };
+      },
+      async set(key, value) {
+        localStorage.setItem(NS + key, value);
+        return { key, value, shared: false };
+      },
+      async delete(key) {
+        const existed = localStorage.getItem(NS + key) !== null;
+        localStorage.removeItem(NS + key);
+        return { key, deleted: existed, shared: false };
+      },
+      async list(prefix) {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith(NS + (prefix || ''))) keys.push(k.slice(NS.length));
+        }
+        return { keys, prefix, shared: false };
+      },
+    };
+  }
+</script>
+
+<!-- React, ReactDOM y lucide-react se cargan desde un CDN (necesitan tu conexión la primera vez;
+     luego el service worker cachea el resto de la app para que funcione offline). -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18",
+    "react-dom/client": "https://esm.sh/react-dom@18/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+  }
+}
+</script>
+
+<!-- Backend real (Supabase): login + perfil de ciclista/bici en la nube.
+     Define window.paveDirtAuth ANTES de cargar app.bundle.js — la app
+     detecta que existe y deja de usar el mock de la vista previa. -->
+<script type="module">
+  import { createClient } from "@supabase/supabase-js";
+
+  const supabase = createClient(
+    "https://cziurkyfqjatuiofktfw.supabase.co",
+    "sb_publishable_C5uJ9hgBDK5GwGLmbnlFQg_xrTBE5dN"
+  );
+
+  window.paveDirtAuth = {
+    async getSession() {
+      const { data } = await supabase.auth.getSession();
+      return data.session ? { id: data.session.user.id, email: data.session.user.email } : null;
+    },
+    async signUp(email, password) {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw new Error(error.message);
+      if (!data.user) throw new Error("Revisa tu correo para confirmar la cuenta antes de iniciar sesión.");
+      return { id: data.user.id, email: data.user.email };
+    },
+    async signIn(email, password) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.message);
+      return { id: data.user.id, email: data.user.email };
+    },
+    async getProfile(userId) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("data")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data ? data.data : null;
+    },
+    async saveProfile(userId, profileData) {
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ user_id: userId, data: profileData, updated_at: new Date().toISOString() });
+      if (error) throw new Error(error.message);
+    },
+  };
+</script>
+</head>
+<body>
+  <div id="root"><div id="boot-fallback">Cargando PaveDirt…</div></div>
+
+  <script type="module" src="app.bundle.js"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
