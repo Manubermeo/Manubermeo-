@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAVEDIRT — Ciclocomputador para ruta y montaña</title>
+<meta name="description" content="PAVEDIRT: el ciclocomputador que no le pregunta a la ruta qué es. Taller autorizado Bike Shop Manubermeo Repair & Parts.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt:#161718;
+    --device:#0D0E0F;
+    --concrete:#3A3D42;
+    --line:#2A2B2D;
+    --rust:#C1502E;
+    --lime:#B4FF39;
+    --chalk:#F0EEE9;
+    --muted:#8A8783;
+    --muted2:#6B6965;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--asphalt);
+    color:var(--chalk);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  a{color:inherit; text-decoration:none;}
+  .section{max-width:1100px; margin:0 auto; padding:100px 32px;}
+  @media (max-width:720px){ .section{padding:64px 22px;} }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--rust); margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{ content:""; width:18px; height:1px; background:var(--rust); }
+
+  /* ===== NAV ===== */
+  header{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:24px 32px; max-width:1100px; margin:0 auto;
+    background:rgba(22,23,24,.9); backdrop-filter:blur(8px);
+  }
+  .navmark{width:26px; height:26px; flex-shrink:0;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .navword{
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+    font-size:17px; letter-spacing:.02em; text-transform:uppercase;
+  }
+  .navword .dirt{color:var(--rust);}
+  nav.links{display:flex; gap:32px; color:var(--muted);
+    font-family:'JetBrains Mono', monospace; font-size:.78rem; letter-spacing:.04em;}
+  nav.links a:hover{color:var(--chalk);}
+  .cta-mini{
+    border:1px solid var(--rust); color:var(--chalk);
+    padding:9px 18px; font-size:.8rem;
+    font-family:'JetBrains Mono', monospace; letter-spacing:.04em;
+    transition:background .3s ease; white-space:nowrap;
+  }
+  .cta-mini:hover{background:var(--rust); color:var(--asphalt);}
+  @media (max-width:820px){ nav.links{display:none;} }
+
+  /* ===== HERO ===== */
+  .hero{padding-top:56px; padding-bottom:40px;}
+  .hero h1{
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+    font-size:clamp(48px, 8vw, 92px);
+    line-height:.95; letter-spacing:-.02em; text-transform:uppercase;
+  }
+  .hero h1 .pave{color:var(--chalk);}
+  .hero h1 .dirt{color:var(--rust);}
+
+  .hero-line-wrap{margin:36px 0; width:100%;}
+  svg#route{width:100%; height:60px; display:block;}
+  .route-path{fill:none; stroke:var(--chalk); stroke-width:3; stroke-linecap:round;}
+  .route-path.dirt-part{stroke:var(--rust);}
+  .route-dot{fill:var(--lime);}
+
+  .hero-tagline{font-size:19px; color:var(--muted); max-width:480px; line-height:1.5;}
+  .hero-tagline strong{color:var(--chalk); font-weight:500;}
+  .hero-actions{display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin:32px 0 12px;}
+  .btn-primary{
+    font-family:'JetBrains Mono', monospace; font-weight:700; font-size:.85rem;
+    letter-spacing:.04em; text-transform:uppercase;
+    background:var(--rust); color:var(--asphalt);
+    padding:15px 26px; border:none; cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .btn-primary:hover{transform:translateY(-1px);}
+  .status-note{font-family:'JetBrains Mono', monospace; font-size:.78rem; color:var(--muted2);}
+  .status-note b{color:var(--chalk);}
+
+  /* ===== DEVICE MOCKUP (signature) ===== */
+  .device{
+    margin-top:56px;
+    background:var(--device); border:1px solid var(--line); border-radius:20px; padding:28px;
+  }
+  .device-topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted2);
+    letter-spacing:.08em; text-transform:uppercase; margin-bottom:24px; flex-wrap:wrap; gap:12px;
+  }
+  .terrain-toggle{ display:flex; background:#1C1D1F; border-radius:20px; padding:3px; gap:2px; }
+  .terrain-toggle button{
+    padding:6px 14px; border-radius:16px; font-size:10px; border:none; background:none;
+    color:var(--muted2); font-family:'JetBrains Mono', monospace; letter-spacing:.04em; cursor:pointer;
+    transition:all .25s ease;
+  }
+  .terrain-toggle button.active{background:var(--rust); color:var(--asphalt); font-weight:700;}
+
+  .metric-grid{
+    display:grid; grid-template-columns:1.4fr 1fr; gap:2px;
+    background:var(--line); border-radius:12px; overflow:hidden; margin-bottom:2px;
+  }
+  .metric{background:var(--device); padding:26px 24px;}
+  .metric .m-label{
+    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted2);
+    text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px;
+  }
+  .metric .m-value{ font-family:'JetBrains Mono', monospace; font-weight:700; font-size:56px; line-height:1; color:var(--lime); transition:color .2s ease;}
+  .metric .m-value.small{font-size:34px; color:var(--chalk);}
+  .metric .m-unit{font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--muted2); margin-left:6px;}
+
+  .metric-sub-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:2px; background:var(--line); border-radius:12px; overflow:hidden;}
+  .metric-sub{background:var(--device); padding:18px 20px;}
+  .metric-sub .m-value.small{font-size:22px;}
+  .metric-sub .m-unit{font-size:11px;}
+
+  .elev-panel{margin-top:2px; background:var(--device); border-radius:12px; padding:22px 24px 16px;}
+  .elev-header{
+    display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace;
+    font-size:11px; color:var(--muted2); text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px;
+  }
+  .elev-header .grad{color:var(--rust); font-weight:700;}
+  svg#elev{width:100%; height:80px; display:block;}
+
+  /* ===== SECTION HEADERS ===== */
+  .section-head{max-width:60ch; margin-bottom:52px;}
+  h2{
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+    font-size:clamp(1.7rem, 3vw, 2.3rem); text-transform:uppercase; letter-spacing:-.01em; margin-bottom:16px;
+  }
+  .section-head p{color:var(--muted); font-size:1.02rem; max-width:52ch;}
+
+  /* ===== APP PRINCIPLES / FEATURES ===== */
+  .principle{ display:flex; gap:24px; padding:26px 0; border-top:1px solid var(--line); align-items:flex-start; }
+  .principle:last-child{border-bottom:1px solid var(--line);}
+  .principle .num{font-family:'JetBrains Mono', monospace; color:var(--rust); font-size:13px; flex-shrink:0; padding-top:2px;}
+  .principle h3{font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:1.1rem; margin-bottom:8px;}
+  .principle p{color:var(--muted); font-size:16px; line-height:1.6; max-width:600px;}
+  .app-cta{
+    display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    margin-top:40px; padding:28px; background:var(--device); border:1px solid var(--line); border-radius:14px;
+  }
+  .app-cta-label{ font-family:'JetBrains Mono', monospace; font-size:.72rem; letter-spacing:.06em; color:var(--rust); text-transform:uppercase; margin-bottom:8px;}
+  .app-cta-text{color:var(--chalk); font-size:.98rem; max-width:40ch;}
+
+  /* ===== TALLER ===== */
+  .locations{ display:grid; grid-template-columns:repeat(3,1fr); gap:2px; background:var(--line); border-radius:12px; overflow:hidden; margin-top:12px;}
+  @media (max-width:900px){ .locations{grid-template-columns:1fr;} }
+  .loc-card{ background:var(--device); padding:28px; display:block; transition:background .2s ease;}
+  .loc-card:hover{ background:#141516; }
+  .loc-link{ display:inline-block; margin-top:14px; font-family:'JetBrains Mono', monospace; font-size:.72rem; letter-spacing:.04em; color:var(--rust); }
+  .loc-tag{
+    display:inline-block; font-family:'JetBrains Mono', monospace; font-size:.66rem; letter-spacing:.06em;
+    padding:4px 9px; border-radius:99px; margin-bottom:16px; text-transform:uppercase;
+    background:var(--rust); color:var(--asphalt);
+  }
+  .loc-tag.partner{ background:none; border:1px solid var(--concrete); color:var(--muted); }
+  .loc-card h3{font-family:'Space Grotesk', sans-serif; font-size:1.05rem; margin-bottom:8px;}
+  .loc-card address{font-style:normal; color:var(--muted); font-size:.92rem; line-height:1.6;}
+
+  /* ===== WAITLIST ===== */
+  .waitlist{
+    background:var(--device); border:1px solid var(--line); border-radius:16px;
+    margin:0 32px; padding:64px 6vw; max-width:1100px; margin-left:auto; margin-right:auto;
+  }
+  .waitlist-inner{max-width:620px;}
+  .waitlist form{display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;}
+  .waitlist input[type="email"]{
+    flex:1; min-width:220px; background:var(--asphalt); border:1px solid var(--line);
+    padding:14px 16px; color:var(--chalk); font-family:'Inter', sans-serif; font-size:.95rem;
+  }
+  .waitlist input::placeholder{color:var(--muted2);}
+  .waitlist .confirm{display:none; font-family:'JetBrains Mono', monospace; font-size:.85rem; color:var(--lime); margin-top:16px;}
+  .waitlist .confirm.show{display:block;}
+
+  /* ===== FOOTER ===== */
+  footer{
+    text-align:center; padding:60px 32px 80px;
+    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--muted2); letter-spacing:.05em;
+  }
+  footer .fmark{color:var(--chalk); display:block; margin-bottom:8px; font-size:13px;}
+
+  ::selection{background:var(--rust); color:var(--asphalt);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg class="navmark" viewBox="0 0 26 26" fill="none">
+      <path d="M2 18 L11 18" stroke="#F0EEE9" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M11 18 L14 14 L17 19 L20 12 L24 18" stroke="#C1502E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <div class="navword">PAVE<span class="dirt">DIRT</span></div>
+  </div>
+  <nav class="links">
+    <a href="#app">APP</a>
+    <a href="#taller">TALLER</a>
+    <a href="marca.html">MARCA</a>
+    <a href="#waitlist">LISTA DE ESPERA</a>
+  </nav>
+  <a href="#waitlist" class="cta-mini">ÚNETE</a>
+</header>
+
+<section class="hero section" id="top">
+  <div class="eyebrow">Ciclocomputador · MTB + Ruta</div>
+  <h1><span class="pave">PAVE</span><span class="dirt">DIRT</span></h1>
+
+  <div class="hero-line-wrap">
+    <svg id="route" viewBox="0 0 1000 60" preserveAspectRatio="none">
+      <path class="route-path" d="M0,30 L480,30" />
+      <path class="route-path dirt-part" d="M480,30 L520,14 L555,42 L590,8 L625,36 L660,16 L695,44 L730,12 L765,32 L800,20 L840,34 L880,18 L920,30 L1000,30" />
+      <circle class="route-dot" cx="480" cy="30" r="6"/>
+    </svg>
+  </div>
+
+  <p class="hero-tagline">Un ciclocomputador que no le pregunta a la ruta qué es.<br><strong>Asfalto o tierra, vos decidís.</strong></p>
+
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">Únete a la lista de espera</button>
+  </div>
+  <p class="status-note">Estado: <b>en desarrollo</b> · Lanzamiento próximo para iOS y Android</p>
+
+  <div class="device" id="device">
+    <div class="device-topbar">
+      <span id="routeName">Sendero del Roble · 14:32</span>
+      <div class="terrain-toggle">
+        <button id="btnRuta" onclick="setMode('ruta')">RUTA</button>
+        <button id="btnMixto" class="active" onclick="setMode('mixto')">MIXTO</button>
+        <button id="btnMtb" onclick="setMode('mtb')">MTB</button>
+      </div>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric"><div class="m-label">Velocidad</div><div class="m-value" id="mSpeed">38.4<span class="m-unit">km/h</span></div></div>
+      <div class="metric"><div class="m-label">Cadencia</div><div class="m-value small" id="mCad">87<span class="m-unit">rpm</span></div></div>
+    </div>
+
+    <div class="metric-sub-grid">
+      <div class="metric-sub"><div class="m-label">Distancia</div><div class="m-value small" id="mDist">23.7<span class="m-unit">km</span></div></div>
+      <div class="metric-sub"><div class="m-label">Altitud</div><div class="m-value small" id="mAlt">612<span class="m-unit">m</span></div></div>
+      <div class="metric-sub"><div class="m-label">Tiempo</div><div class="m-value small" id="mTime">1:04:22</div></div>
+    </div>
+
+    <div class="elev-panel">
+      <div class="elev-header">
+        <span>Perfil de elevación</span>
+        <span class="grad" id="mGrad">+8.2% pendiente</span>
+      </div>
+      <svg id="elev" viewBox="0 0 1000 90" preserveAspectRatio="none">
+        <path fill="none" stroke="#3A3D42" stroke-width="1" d="M0,80 L1000,80"/>
+        <path id="elevPave" fill="none" stroke="#F0EEE9" stroke-width="2.5" stroke-linecap="round" d="M0,70 L200,60 L400,45 L470,38" />
+        <path id="elevDirt" fill="none" stroke="#C1502E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M470,38 L500,44 L520,20 L545,50 L570,15 L600,42 L630,25 L660,48 L690,10 L720,35 L750,20 L780,30 L1000,12" />
+        <circle id="elevDot" cx="470" cy="38" r="5" fill="#B4FF39"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="app">
+  <div class="section-head">
+    <div class="eyebrow">La app</div>
+    <h2>Un solo trazo, todos los terrenos</h2>
+    <p>PAVEDIRT no es dos apps pegadas: es un panel que entiende en qué terreno estás y ajusta lo que te muestra.</p>
+  </div>
+  <div class="principle">
+    <div class="num">01</div>
+    <div><h3>Cambia con el terreno</h3><p>El panel ajusta métricas y precisión de altitud según pises pavimento o tierra, sin que tengas que tocar nada.</p></div>
+  </div>
+  <div class="principle">
+    <div class="num">02</div>
+    <div><h3>Módulo de mecánica</h3><p>Ficha técnica de tu bici con configuración independiente de suspensión delantera y trasera, para llevar el mantenimiento al día.</p></div>
+  </div>
+  <div class="principle">
+    <div class="num">03</div>
+    <div><h3>Después de cada ruta</h3><p>Al cerrar el recorrido, te sugiere qué revisar en la bici, cuánto hidratarte y qué estirar — con tu taller autorizado más cercano a la mano.</p></div>
+  </div>
+  <div class="app-cta">
+    <div>
+      <div class="app-cta-label">Versión temprana · GPS real de tu teléfono</div>
+      <p class="app-cta-text">Ya puedes abrir el ciclocomputador en tu navegador y agregarlo a la pantalla de inicio como una app.</p>
+    </div>
+    <a href="/app/" class="btn-primary" style="text-decoration:none; display:inline-block;">Abrir el ciclocomputador</a>
+  </div>
+</section>
+
+<section class="section" id="taller">
+  <div class="section-head">
+    <div class="eyebrow">Taller autorizado</div>
+    <h2>Dónde revisan tu bici</h2>
+    <p>Bike Shop Manubermeo Repair & Parts es el taller autorizado de PAVEDIRT para revisión y repuestos, con un taller asociado adicional en Cuenca.</p>
+  </div>
+  <div class="locations">
+    <a class="loc-card" href="https://share.google/y3VMMe4IYd71QRohd" target="_blank" rel="noopener">
+      <span class="loc-tag">Autorizado</span>
+      <h3>Bike Shop Manubermeo Repair & Parts</h3>
+      <address>12 de Octubre y Calle Maldonado<br>Riberas del Tarqui, Cuenca, Azuay</address>
+      <span class="loc-link">Ver ubicación ↗</span>
+    </a>
+    <a class="loc-card" href="https://www.facebook.com/bermeomanu?locale=es_LA" target="_blank" rel="noopener">
+      <span class="loc-tag">Autorizado</span>
+      <h3>Bike Shop Manubermeo Repair & Parts</h3>
+      <address>Cariamanga, Calvas, Loja</address>
+      <span class="loc-link">Facebook ↗</span>
+    </a>
+    <a class="loc-card" href="https://www.facebook.com/bicicuenca.shop/" target="_blank" rel="noopener">
+      <span class="loc-tag partner">Asociado</span>
+      <h3>Bicicuenca</h3>
+      <address>Cuenca, Azuay</address>
+      <span class="loc-link">Facebook ↗</span>
+    </a>
+  </div>
+</section>
+
+<section class="section" id="waitlist">
+  <div class="waitlist">
+    <div class="waitlist-inner">
+      <div class="eyebrow">Lista de espera</div>
+      <h2>Sé de los primeros en rodar</h2>
+      <p style="color:var(--muted)">Déjanos tu correo y te avisamos apenas PAVEDIRT esté disponible para descargar.</p>
+      <form id="waitForm" onsubmit="return joinWaitlist(event)">
+        <input type="email" id="waitEmail" placeholder="tu@correo.com" required>
+        <button type="submit" class="btn-primary">Unirme</button>
+      </form>
+      <p class="confirm" id="waitConfirm">Listo — te escribiremos apenas PAVEDIRT esté disponible.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="fmark">PAVEDIRT — Asfalto o tierra, vos decidís.</span>
+  manubermeo.com · Cuenca, Ecuador · © 2026
+</footer>
+
+<script>
+  const modes = {
+    ruta:{
+      speed:'42.3', cad:'91', dist:'38.6', alt:'210', time:'1:12:05', grad:'+2.1% pendiente',
+      route:'Anillo del Valle · 09:10',
+      pave:'M0,58 L250,52 L500,44 L750,36 L1000,30', dirt:'', dotX:1000, dotY:30
+    },
+    mixto:{
+      speed:'38.4', cad:'87', dist:'23.7', alt:'612', time:'1:04:22', grad:'+8.2% pendiente',
+      route:'Sendero del Roble · 14:32',
+      pave:'M0,70 L200,60 L400,45 L470,38',
+      dirt:'M470,38 L500,44 L520,20 L545,50 L570,15 L600,42 L630,25 L660,48 L690,10 L720,35 L750,20 L780,30 L1000,12',
+      dotX:470, dotY:38
+    },
+    mtb:{
+      speed:'21.6', cad:'64', dist:'16.2', alt:'780', time:'0:58:40', grad:'+14.5% pendiente',
+      route:'Loma del Cóndor · 07:45',
+      pave:'M0,66 L90,60',
+      dirt:'M90,60 L120,40 L145,68 L170,30 L195,58 L220,22 L250,52 L280,18 L310,46 L340,15 L370,40 L400,20 L430,44 L460,12 L500,36 L540,18 L580,42 L620,15 L660,38 L700,10 L740,30 L780,16 L820,32 L860,8 L900,26 L1000,5',
+      dotX:90, dotY:60
+    }
+  };
+
+  function setMode(mode){
+    const d = modes[mode];
+    document.getElementById('mSpeed').innerHTML = d.speed + '<span class="m-unit">km/h</span>';
+    document.getElementById('mCad').innerHTML = d.cad + '<span class="m-unit">rpm</span>';
+    document.getElementById('mDist').innerHTML = d.dist + '<span class="m-unit">km</span>';
+    document.getElementById('mAlt').innerHTML = d.alt + '<span class="m-unit">m</span>';
+    document.getElementById('mTime').textContent = d.time;
+    document.getElementById('mGrad').textContent = d.grad;
+    document.getElementById('routeName').textContent = d.route;
+
+    document.getElementById('elevPave').setAttribute('d', d.pave);
+    document.getElementById('elevDirt').setAttribute('d', d.dirt);
+    document.getElementById('elevDot').setAttribute('cx', d.dotX);
+    document.getElementById('elevDot').setAttribute('cy', d.dotY);
+
+    ['btnRuta','btnMixto','btnMtb'].forEach(id => document.getElementById(id).classList.remove('active'));
+    const map = {ruta:'btnRuta', mixto:'btnMixto', mtb:'btnMtb'};
+    document.getElementById(map[mode]).classList.add('active');
+  }
+
+  function joinWaitlist(e){
+    e.preventDefault();
+    document.getElementById('waitConfirm').classList.add('show');
+    document.getElementById('waitForm').reset();
+    return false;
+  }
+</script>
+
+</body>
+</html>
