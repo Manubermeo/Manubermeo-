@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PAVEDIRT — Ciclocomputador para ruta y montaña</title>
 <meta name="description" content="PAVEDIRT: el ciclocomputador que no le pregunta a la ruta qué es. Taller autorizado Bike Shop Manubermeo Repair & Parts.">
+<link rel="icon" type="image/png" sizes="192x192" href="app/icon-192.png">
+<link rel="apple-touch-icon" href="app/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -396,6 +398,18 @@
 
   function joinWaitlist(e){
     e.preventDefault();
+    const emailInput = document.getElementById('waitEmail');
+    const email = (emailInput ? emailInput.value : '').trim().toLowerCase();
+    if (email) {
+      try {
+        const key = 'pavedirt_waitlist';
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!existing.includes(email)) {
+          existing.push(email);
+          localStorage.setItem(key, JSON.stringify(existing));
+        }
+      } catch (_) {}
+    }
     document.getElementById('waitConfirm').classList.add('show');
     document.getElementById('waitForm').reset();
     return false;

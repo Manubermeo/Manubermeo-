@@ -24,32 +24,36 @@
   }
 </style>
 
-<!-- Adaptador de almacenamiento: window.storage solo existe dentro de la vista previa
-     de Claude.ai. Fuera de ahí (esta app instalada), lo reemplazamos por localStorage
-     con la misma forma (get/set/delete/list), sin tocar el código de la app. -->
+<!-- Adaptador de almacenamiento: window.storage con compatibilidad local-first sin doble prefijo -->
 <script>
   if (!window.storage) {
     const NS = 'pavedirt:';
     window.storage = {
       async get(key) {
-        const raw = localStorage.getItem(NS + key);
+        const fullKey = key.startsWith(NS) ? key : NS + key;
+        const raw = localStorage.getItem(fullKey);
         if (raw === null) throw new Error('Key not found: ' + key);
         return { key, value: raw, shared: false };
       },
       async set(key, value) {
-        localStorage.setItem(NS + key, value);
+        const fullKey = key.startsWith(NS) ? key : NS + key;
+        localStorage.setItem(fullKey, value);
         return { key, value, shared: false };
       },
       async delete(key) {
-        const existed = localStorage.getItem(NS + key) !== null;
-        localStorage.removeItem(NS + key);
+        const fullKey = key.startsWith(NS) ? key : NS + key;
+        const existed = localStorage.getItem(fullKey) !== null;
+        localStorage.removeItem(fullKey);
         return { key, deleted: existed, shared: false };
       },
       async list(prefix) {
         const keys = [];
+        const fullPrefix = prefix ? (prefix.startsWith(NS) ? prefix : NS + prefix) : NS;
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i);
-          if (k && k.startsWith(NS + (prefix || ''))) keys.push(k.slice(NS.length));
+          if (k && k.startsWith(fullPrefix)) {
+            keys.push(k.startsWith(NS) ? k.slice(NS.length) : k);
+          }
         }
         return { keys, prefix, shared: false };
       },
@@ -57,8 +61,7 @@
   }
 </script>
 
-<!-- React, ReactDOM y lucide-react se cargan desde un CDN (necesitan tu conexión la primera vez;
-     luego el service worker cachea el resto de la app para que funcione offline). -->
+<!-- React, ReactDOM y lucide-react se cargan desde un CDN (el service worker los cachea para offline). -->
 <script type="importmap">
 {
   "imports": {
@@ -70,9 +73,7 @@
 }
 </script>
 
-<!-- Backend real (Supabase): login + perfil de ciclista/bici en la nube.
-     Define window.paveDirtAuth ANTES de cargar app.bundle.js — la app
-     detecta que existe y deja de usar el mock de la vista previa. -->
+<!-- Backend real (Supabase): login + perfil de ciclista/bici en la nube con respaldo local-first offline. -->
 <script type="module">
   import { createClient } from "@supabase/supabase-js";
 
@@ -83,34 +84,75 @@
 
   window.paveDirtAuth = {
     async getSession() {
-      const { data } = await supabase.auth.getSession();
-      return data.session ? { id: data.session.user.id, email: data.session.user.email } : null;
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data && data.session) {
+          const sess = { id: data.session.user.id, email: data.session.user.email };
+          localStorage.setItem('pavedirt:last_session', JSON.stringify(sess));
+          return sess;
+        }
+      } catch (e) {
+        console.warn('Verificando sesión local:', e);
+      }
+      try {
+        const local = localStorage.getItem('pavedirt:last_session');
+        return local ? JSON.parse(local) : null;
+      } catch (_) {
+        return null;
+      }
     },
     async signUp(email, password) {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw new Error(error.message);
       if (!data.user) throw new Error("Revisa tu correo para confirmar la cuenta antes de iniciar sesión.");
-      return { id: data.user.id, email: data.user.email };
+      const user = { id: data.user.id, email: data.user.email };
+      localStorage.setItem('pavedirt:last_session', JSON.stringify(user));
+      return user;
     },
     async signIn(email, password) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error(error.message);
-      return { id: data.user.id, email: data.user.email };
+      const user = { id: data.user.id, email: data.user.email };
+      localStorage.setItem('pavedirt:last_session', JSON.stringify(user));
+      return user;
     },
     async getProfile(userId) {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("data")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      return data ? data.data : null;
+      let localProfile = null;
+      try {
+        const raw = localStorage.getItem(`pavedirt:profile:${userId}`);
+        if (raw) localProfile = JSON.parse(raw);
+      } catch (_) {}
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("data")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (!error && data && data.data) {
+          localStorage.setItem(`pavedirt:profile:${userId}`, JSON.stringify(data.data));
+          return data.data;
+        }
+      } catch (e) {
+        console.warn('Sin conexión a Supabase, usando perfil local:', e);
+      }
+      return localProfile;
     },
     async saveProfile(userId, profileData) {
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({ user_id: userId, data: profileData, updated_at: new Date().toISOString() });
-      if (error) throw new Error(error.message);
+      // Siempre guardar en local primero para disponibilidad inmediata offline
+      try {
+        localStorage.setItem(`pavedirt:profile:${userId}`, JSON.stringify(profileData));
+      } catch (_) {}
+
+      // Sincronizar en Supabase si hay conectividad
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .upsert({ user_id: userId, data: profileData, updated_at: new Date().toISOString() });
+        if (error) console.warn('Aviso: perfil guardado en caché local, error al sincronizar:', error.message);
+      } catch (e) {
+        console.warn('Aviso: perfil guardado en caché local (sin conexión):', e.message);
+      }
     },
   };
 </script>
