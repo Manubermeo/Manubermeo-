@@ -4,8 +4,9 @@
   "description": "PAVEDIRT — Ciclocomputador para ruta y montaña",
   "private": true,
   "scripts": {
-    "start": "npx serve .",
-    "dev": "npx serve .",
+    "start": "python3 -m http.server 3000",
+    "dev": "python3 -m http.server 3000",
+    "serve": "npx serve .",
     "build": "echo 'Proyecto estático listo para despliegue'",
     "deploy": "firebase deploy --only hosting"
   },
