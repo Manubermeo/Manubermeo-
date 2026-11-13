@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "package.json",
+      "**/.*",
+      "**/node_modules/**",
+      "profiles-setup.sql",
+      "README.md"
+    ]
+  }
+}
