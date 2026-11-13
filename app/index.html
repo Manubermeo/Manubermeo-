@@ -84,10 +84,21 @@
 
   window.paveDirtAuth = {
     async getSession() {
+      // 1. Revisar si hay sesión activa persistente de AuthGate o previa
+      try {
+        const active = localStorage.getItem('pavedirt:active_session');
+        if (active) {
+          const parsed = JSON.parse(active);
+          if (parsed && parsed.id) return parsed;
+        }
+      } catch (_) {}
+
+      // 2. Revisar sesión en Supabase
       try {
         const { data } = await supabase.auth.getSession();
         if (data && data.session) {
           const sess = { id: data.session.user.id, email: data.session.user.email };
+          localStorage.setItem('pavedirt:active_session', JSON.stringify(sess));
           localStorage.setItem('pavedirt:last_session', JSON.stringify(sess));
           return sess;
         }
@@ -96,7 +107,14 @@
       }
       try {
         const local = localStorage.getItem('pavedirt:last_session');
-        return local ? JSON.parse(local) : null;
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed && parsed.id) {
+            localStorage.setItem('pavedirt:active_session', local);
+            return parsed;
+          }
+        }
+        return null;
       } catch (_) {
         return null;
       }
@@ -106,6 +124,7 @@
       if (error) throw new Error(error.message);
       if (!data.user) throw new Error("Revisa tu correo para confirmar la cuenta antes de iniciar sesión.");
       const user = { id: data.user.id, email: data.user.email };
+      localStorage.setItem('pavedirt:active_session', JSON.stringify(user));
       localStorage.setItem('pavedirt:last_session', JSON.stringify(user));
       return user;
     },
@@ -113,6 +132,7 @@
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error(error.message);
       const user = { id: data.user.id, email: data.user.email };
+      localStorage.setItem('pavedirt:active_session', JSON.stringify(user));
       localStorage.setItem('pavedirt:last_session', JSON.stringify(user));
       return user;
     },
@@ -156,6 +176,9 @@
     },
   };
 </script>
+
+<!-- Flujo de autenticación inicial y recuperación con administración -->
+<script src="auth-gate.js"></script>
 </head>
 <body>
   <div id="root"><div id="boot-fallback">Cargando PaveDirt…</div></div>

@@ -1,8 +1,9 @@
-const CACHE_NAME = 'pavedirt-app-v2';
+const CACHE_NAME = 'pavedirt-app-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
   './app.bundle.js',
+  './auth-gate.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
